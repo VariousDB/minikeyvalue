@@ -25,6 +25,7 @@ type ListResponse struct {
 }
 
 func (a *App) QueryHandler(key []byte, w http.ResponseWriter, r *http.Request) {
+	// s3协议
 	if r.URL.Query().Get("list-type") == "2" {
 		// this is an S3 style query
 		// TODO: this is very incomplete
@@ -45,7 +46,7 @@ func (a *App) QueryHandler(key []byte, w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(ret))
 		return
 	}
-
+	// list查询
 	// operation is first query parameter (e.g. ?list&limit=10)
 	operation := strings.Split(r.URL.RawQuery, "&")[0]
 	switch operation {
@@ -183,6 +184,7 @@ func (a *App) WriteToReplicas(key []byte, value io.Reader, valuelen int64) int {
 }
 
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// 作为server，对handler的实现
 	key := []byte(r.URL.Path)
 	lkey := []byte(r.URL.Path + r.URL.Query().Get("partNumber"))
 
@@ -213,6 +215,7 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Md5", rec.hash)
 		}
 		if rec.deleted == SOFT || rec.deleted == HARD {
+			// 如果此记录被删除，fallback回退
 			if a.fallback == "" {
 				w.Header().Set("Content-Length", "0")
 				w.WriteHeader(404)

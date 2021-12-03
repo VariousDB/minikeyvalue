@@ -41,6 +41,7 @@ func (a *App) UnlockKey(key []byte) {
 func (a *App) LockKey(key []byte) bool {
 	a.mlock.Lock()
 	defer a.mlock.Unlock()
+	// 实现锁的机制
 	if _, prs := a.lock[string(key)]; prs {
 		return false
 	}
@@ -66,9 +67,10 @@ func (a *App) PutRecord(key []byte, rec Record) bool {
 func main() {
 	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = 100
 	rand.Seed(time.Now().Unix())
-
+	// 读取配置参数
 	port := flag.Int("port", 3000, "Port for the server to listen on")
 	pdb := flag.String("db", "", "Path to leveldb")
+	// todo fallback参数的作用
 	fallback := flag.String("fallback", "", "Fallback server for missing keys")
 	replicas := flag.Int("replicas", 3, "Amount of replicas to make of the data")
 	subvolumes := flag.Int("subvolumes", 10, "Amount of subvolumes, disks per machine")
@@ -76,6 +78,7 @@ func main() {
 	protect := flag.Bool("protect", false, "Force UNLINK before DELETE")
 	verbose := flag.Bool("v", false, "Verbose output")
 	md5sum := flag.Bool("md5sum", true, "Calculate and store MD5 checksum of values")
+	// 超时时间
 	voltimeout := flag.Duration("voltimeout", 1*time.Second, "Volume servers must respond to GET/HEAD requests in this amount of time or they are considered down, as duration")
 	flag.Parse()
 
@@ -93,15 +96,14 @@ func main() {
 	} else {
 		log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	}
-
+	// 选择db的路径
 	if *pdb == "" {
 		panic("Need a path to the database")
 	}
-
 	if len(volumes) < *replicas {
 		panic("Need at least as many volumes as replicas")
 	}
-
+	// 使用leveldb作为本地存储
 	db, err := leveldb.OpenFile(*pdb, nil)
 	if err != nil {
 		panic(fmt.Sprintf("LevelDB open failed: %s", err))
